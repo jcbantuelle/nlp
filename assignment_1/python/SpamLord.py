@@ -3,14 +3,9 @@ import os
 import re
 import pprint
 
-email_patterns = []
-email_patterns.append(r'(?i)([a-zA-Z][a-zA-Z\.]*[a-zA-Z])@([a-zA-Z][a-zA-Z\.]*[a-zA-Z])\.(com|edu|org)[^a-zA-Z]')
-#email_patterns.append('(\w+[\w\.]*)[\(\s)]?@[\)\s]?(\w+[\w\.]*).(edu)')
-#email_patterns.append('(\w+[\w\.]*)(?:[\(\s]at[\)\s])?<!Server(\w+[\w\.]*).(edu)')
-#email_patterns.append('(\w+[\w\.]*)\sWHERE\s(\w+[\w\.]*)\sDOM\s(edu)')
+email_pattern = r'(?i)([a-zA-Z][a-zA-Z\.]*[a-zA-Z])@([a-zA-Z][a-zA-Z\.]*[a-zA-Z])\.(com|edu|org)[^a-zA-Z]'
 
-phone_patterns = []
-phone_patterns.append('(?:[^\d]|^)\(?(\d{3})\)?[\-\s\.]?(\d{3})[\-\s\.](\d{4})')
+phone_pattern = r'(?:[^\d]|^)\(?(\d{3})\)?[\-\s\.]?(\d{3})[\-\s\.](\d{4})'
 
 """ 
 TODO
@@ -38,17 +33,16 @@ def process_file(name, f):
     # sys.stderr.write('[process_file]\tprocessing file: %s\n' % (path))
     res = []
     for line in f:
-		res = res + pattern_match(email_patterns, email_preprocess(line), 'e', name)
-		res = res + pattern_match(phone_patterns, line, 'p', name)
+		res = res + pattern_match(email_pattern, email_preprocess(line), 'e', name)
+		res = res + pattern_match(phone_pattern, line, 'p', name)
     return res
 
-def pattern_match(patterns, line, pattern_type, name):
+def pattern_match(pattern, line, pattern_type, name):
 	res = []
-	for pattern in patterns:
-		matches = re.findall(pattern, line)
-		for m in matches:
-			result = '%s@%s.%s' % m if pattern_type == 'e' else '%s-%s-%s' % m
-			res.append((name, pattern_type, result))
+	matches = re.findall(pattern, line)
+	for m in matches:
+		result = '%s@%s.%s' % m if pattern_type == 'e' else '%s-%s-%s' % m
+		res.append((name, pattern_type, result))
 	return res
 	
 def replace_whitespace(match):

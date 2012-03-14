@@ -4,9 +4,10 @@ import re
 import pprint
 
 email_patterns = []
-email_patterns.append('(\w+[\w\.]*)[\(\s)]?@[\)\s]?(\w+[\w\.]*).(edu)')
-email_patterns.append('(\w+[\w\.]*)(?:[\(\s]at[\)\s])?<!Server(\w+[\w\.]*).(edu)')
-email_patterns.append('(\w+[\w\.]*)\sWHERE\s(\w+[\w\.]*)\sDOM\s(edu)')
+email_patterns.append(r'(?i)([a-zA-Z][a-zA-Z\.]*[a-zA-Z])@([a-zA-Z][a-zA-Z\.]*[a-zA-Z])\.(com|edu|org)[^a-zA-Z]')
+#email_patterns.append('(\w+[\w\.]*)[\(\s)]?@[\)\s]?(\w+[\w\.]*).(edu)')
+#email_patterns.append('(\w+[\w\.]*)(?:[\(\s]at[\)\s])?<!Server(\w+[\w\.]*).(edu)')
+#email_patterns.append('(\w+[\w\.]*)\sWHERE\s(\w+[\w\.]*)\sDOM\s(edu)')
 
 phone_patterns = []
 phone_patterns.append('(?:[^\d]|^)\(?(\d{3})\)?[\-\s\.]?(\d{3})[\-\s\.](\d{4})')
@@ -37,7 +38,7 @@ def process_file(name, f):
     # sys.stderr.write('[process_file]\tprocessing file: %s\n' % (path))
     res = []
     for line in f:
-		res = res + pattern_match(email_patterns, line, 'e', name)
+		res = res + pattern_match(email_patterns, email_preprocess(line), 'e', name)
 		res = res + pattern_match(phone_patterns, line, 'p', name)
     return res
 
@@ -49,6 +50,37 @@ def pattern_match(patterns, line, pattern_type, name):
 			result = '%s@%s.%s' % m if pattern_type == 'e' else '%s-%s-%s' % m
 			res.append((name, pattern_type, result))
 	return res
+	
+def replace_whitespace(match):
+    return re.sub(r'\s', r'.', match.group())
+
+def email_preprocess(line):
+	
+	# @ symbol
+	line = re.sub(r'\sat\s', r'@', line)
+	line = re.sub(r'\(at\)', r'@', line)
+	line = re.sub(r'\(@\)', r'@', line)
+	line = re.sub(r'\sWHERE\s', r'@', line)
+	line = re.sub(r'\s@\s', r'@', line)
+	line = re.sub(r'&#x40;', r'@', line)
+	
+	# Strip out
+	line = re.sub(r'Server@', r'', line)
+	line = re.sub(r'-', r'', line)
+	line = re.sub(r'&.*?;', r'', line)
+	
+	# . symbol
+	line = re.sub(r'\sdot\s', r'.', line)
+	line = re.sub(r'\sdt\s', r'.', line)
+	line = re.sub(r'\sDOM\s', r'.', line)
+	line = re.sub(r';', r'.', line)
+	
+	# obfuscated
+	line = re.sub(r'\(\'([a-zA-Z][a-zA-Z\.]*[a-zA-Z]\.(?:com|edu|org))\',\'([a-zA-Z][a-zA-Z\.]*[a-zA-Z])\'\)', r'\(\2@\1\)', line)
+	line = re.sub(r'([a-zA-Z][a-zA-Z\.]*[a-zA-Z])\s\(followed\sby\s[\"]?(@[a-zA-Z][a-zA-Z\.]*[a-zA-Z]\.(?:com|edu|org))[\"]?\)', r'\1\2', line)
+	line = re.sub(r'[a-zA-Z][a-zA-Z\.]*[a-zA-Z]@[a-zA-Z][a-zA-Z\s]*[a-zA-Z]\s(com|edu)', replace_whitespace, line)
+	
+	return line
 
 """
 You should not need to edit this function, nor should you alter
